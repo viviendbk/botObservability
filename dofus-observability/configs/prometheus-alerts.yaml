@@ -1,0 +1,36 @@
+# =============================================================================
+# Prometheus Alerting Rules — Dofus Bot Fleet
+# =============================================================================
+# This file is ingested by the PrometheusRule CRD via Helm's .Files.Get
+# =============================================================================
+
+groups:
+  - name: dofus-bot-alerts
+    rules:
+      # -----------------------------------------------------------------------
+      # KamasSuddenDrop
+      # Fires when a bot's kamas balance drops by more than 500,000 in a
+      # rolling 5-minute window. This may indicate the bot was banned,
+      # robbed, or experienced an in-game exploit.
+      # -----------------------------------------------------------------------
+      - alert: KamasSuddenDrop
+        expr: |
+          (
+            max_over_time(dofus_bot_kamas[5m])
+            - dofus_bot_kamas
+          ) > 500000
+        for: 1m
+        labels:
+          severity: critical
+          team: bot-ops
+        annotations:
+          summary: >-
+            Kamas balance dropped by >500k on {{ $labels.bot_name }}
+            (server: {{ $labels.server }})
+          description: >-
+            The bot "{{ $labels.bot_name }}" on server "{{ $labels.server }}"
+            has lost more than 500,000 kamas in the last 5 minutes.
+            Current value: {{ $value | humanize }} kamas delta.
+            Investigate immediately for potential ban or exploit.
+          runbook_url: https://wiki.internal/runbooks/kamas-drop
+          dashboard_url: https://grafana.internal/d/dofus-bots/dofus-bot-fleet

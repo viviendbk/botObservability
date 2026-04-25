@@ -1,0 +1,27 @@
+# {{- /*
+#   =============================================================================
+#   PrometheusRule CRD — Dofus Bot Alert Rules
+#   =============================================================================
+#   Loads alerting rules from configs/prometheus-alerts.yaml via .Files.Get
+#   The kube-prometheus-stack operator auto-discovers this CRD by labels.
+#   =============================================================================
+
+# apiVersion: monitoring.coreos.com/v1
+# kind: PrometheusRule
+# metadata:
+#   name: dofus-bot-alerts
+#   namespace: {{ .Release.Namespace }}
+#   labels:
+#     app.kubernetes.io/name: dofus-bot-alerts
+#     app.kubernetes.io/part-of: {{ .Chart.Name }}
+#     app.kubernetes.io/managed-by: {{ .Release.Service }}
+#     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+#     # This label is required for the kube-prometheus-stack operator to
+#     # discover and load this PrometheusRule automatically.
+#     release: {{ .Release.Name }}
+# spec:
+#   {{- .Files.Get "configs/prometheus-alerts.yaml" | nindent 2 }}
+
+# */ -}}
+
+null

@@ -1,0 +1,128 @@
+# =============================================================================
+# Dofus Observability — Umbrella Chart Values
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Kafka (Strimzi) Configuration
+# -----------------------------------------------------------------------------
+kafka:
+  replicas: 2
+  version: 4.2.0
+  logRetentionHours: 168
+  storage:
+    size: 5Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  topic:
+    partitions: 2
+    replicas: 2
+    retentionMs: 604800000
+
+# -----------------------------------------------------------------------------
+# loki-stack (Sub-chart)
+# -----------------------------------------------------------------------------
+loki-stack:
+  enabled: true
+  promtail:
+    enabled: false
+  loki:
+    persistence:
+      enabled: true
+      storageClassName: ""
+      size: 2Gi
+
+strimzi-kafka-operator:
+  enabled: true
+
+# ------------------------------------------------------------------------------
+# Ingress Controller (The API Gateway)
+# ------------------------------------------------------------------------------
+ingress-nginx:
+  enabled: true
+  controller:
+    ingressClassResource:
+      name: nginx
+    hostPort:
+      enabled: false
+    service:
+      type: LoadBalancer
+
+# ------------------------------------------------------------------------------
+# Visualization & Alerting (Prometheus & Grafana)
+# ------------------------------------------------------------------------------
+kube-prometheus-stack:
+  enabled: true
+  alertmanager:
+    enabled: true
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.dofus.local
+  prometheus:
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.dofus.local
+  grafana:
+    enabled: true
+    adminPassword: "admin"
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.dofus.local
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        url: http://dofus-observability-loki.default.svc.cluster.local:3100
+        access: proxy
+        isDefault: false
+
+# ------------------------------------------------------------------------------
+# OpenTelemetry Collector Configuration
+# ------------------------------------------------------------------------------
+otel-collector:
+  enabled: true
+  mode: deployment
+  replicaCount: 1
+  image:
+    repository: "otel/opentelemetry-collector-contrib"
+    tag: "0.100.0"
+  config:
+    receivers:
+      kafka:
+        brokers:
+          - dofus-kafka-kafka-bootstrap.default.svc.cluster.local:9092
+        topic: bot_events
+        group_id: otel-log-readers
+        initial_offset: earliest
+        encoding: json
+    processors:
+      batch:
+        send_batch_size: 1000
+        timeout: 1s
+    exporters:
+      debug:
+        verbosity: detailed
+      loki:
+        endpoint: "http://dofus-observability-loki.default.svc.cluster.local:3100/loki/\
+          api/v1/push"
+    service:
+      telemetry:
+        metrics:
+          readers: []
+      pipelines:
+        traces: null
+        metrics: null
+        logs:
+          receivers: [ kafka ]
+          processors: [ batch ]
+          exporters: [ debug, loki ]

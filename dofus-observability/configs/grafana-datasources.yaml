@@ -1,0 +1,35 @@
+# =============================================================================
+# Grafana Datasource Provisioning
+# =============================================================================
+# This file is mounted into Grafana via the sidecar / additionalDataSources
+# configuration in values.yaml to auto-provision Prometheus and Loki.
+# =============================================================================
+
+apiVersion: 1
+
+datasources:
+  # ---------------------------------------------------------------------------
+  # Prometheus — primary metrics store
+  # ---------------------------------------------------------------------------
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://dofus-observability-kube-prometheus-stack-prometheus.default.svc.cluster.local:9090
+    isDefault: false
+    editable: false
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: POST
+    version: 1
+
+  # ---------------------------------------------------------------------------
+  # Loki — log aggregation backend
+  # ---------------------------------------------------------------------------
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki-stack.default.svc.cluster.local:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+    version: 1

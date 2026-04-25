@@ -1,0 +1,44 @@
+# {{- /*
+#   =============================================================================
+#   OpenTelemetry Collector CRD (OpenTelemetryCollector)
+#   =============================================================================
+#   Prerequisites: OpenTelemetry Operator must be installed in the cluster.
+#   The config is loaded from configs/otel-collector-config.yaml via .Files.Get
+#   =============================================================================
+# */ -}}
+# apiVersion: opentelemetry.io/v1beta1
+# kind: OpenTelemetryCollector
+# metadata:
+#   name: dofus-otel-collector
+#   namespace: {{ .Release.Namespace }}
+#   labels:
+#     app.kubernetes.io/name: dofus-otel-collector
+#     app.kubernetes.io/part-of: {{ .Chart.Name }}
+#     app.kubernetes.io/managed-by: {{ .Release.Service }}
+#     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+# spec:
+#   mode: {{ .Values.otelCollector.mode | default "deployment" }}
+#   replicas: {{ .Values.otelCollector.replicas | default 2 }}
+#   image: {{ .Values.otelCollector.image | default "otel/opentelemetry-collector-contrib:0.115.0" }}
+#   resources:
+#     requests:
+#       memory: {{ .Values.otelCollector.resources.requests.memory | default "256Mi" }}
+#       cpu: {{ .Values.otelCollector.resources.requests.cpu | default "200m" }}
+#     limits:
+#       memory: {{ .Values.otelCollector.resources.limits.memory | default "512Mi" }}
+#       cpu: {{ .Values.otelCollector.resources.limits.cpu | default "500m" }}
+#   config:
+#     {{- .Files.Get "configs/otel-collector-config.yaml" | nindent 4 }}
+#   ports:
+#     - name: metrics
+#       port: 8889
+#       protocol: TCP
+#       targetPort: 8889
+#     - name: health
+#       port: 13133
+#       protocol: TCP
+#       targetPort: 13133
+#   serviceAccount: {{ .Values.otelCollector.serviceAccount | default "otel-collector" }}
+#   env:
+#     - name: GOGC
+#       value: "80"

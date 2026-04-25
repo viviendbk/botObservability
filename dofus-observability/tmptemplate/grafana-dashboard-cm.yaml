@@ -1,0 +1,25 @@
+# {{- /*
+#   =============================================================================
+#   Grafana Dashboard ConfigMap — Dofus Bot Fleet
+#   =============================================================================
+#   The grafana_dashboard: "1" label enables auto-discovery by the Grafana
+#   sidecar container. The dashboard JSON is loaded from the external file
+#   configs/dofus-dashboard.json via .Files.Get (no inline JSON in templates).
+#   =============================================================================
+# */ -}}
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: dofus-bot-dashboard
+#   namespace: {{ .Release.Namespace }}
+#   labels:
+#     app.kubernetes.io/name: dofus-bot-dashboard
+#     app.kubernetes.io/part-of: {{ .Chart.Name }}
+#     app.kubernetes.io/managed-by: {{ .Release.Service }}
+#     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+#     # This label is required for the Grafana sidecar to auto-discover
+#     # and load this dashboard.
+#     grafana_dashboard: "1"
+# data:
+#   dofus-dashboard.json: |-
+#     {{- .Files.Get "configs/dofus-dashboard.json" | nindent 4 }}

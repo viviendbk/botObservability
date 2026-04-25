@@ -1,0 +1,47 @@
+@workspace
+**Context:** I am a Senior DevOps Engineer deploying an enterprise-grade observability pipeline on a bare-metal `kubeadm` Kubernetes cluster.
+**Task:** Build a complete, production-ready Helm "Umbrella" Chart named `dofus-observability` to monitor a fleet of automated game bots. 
+
+**Strict Architectural Rule - Dashboards as Code & Separation of Concerns:**
+Absolutely NO inline configuration blocks inside Kubernetes manifests. All tool configurations, alerts, and Grafana dashboards MUST be written as standalone files inside a `configs/` directory. The Helm templates and `values.yaml` must mount or ingest these external files using ConfigMaps, Helm's `.Files.Get`, or Grafana sidecar provisioning.
+
+**Required Helm Chart Structure:**
+Generate the following tree:
+dofus-observability/
+├── Chart.yaml
+├── values.yaml
+├── configs/
+│   ├── otel-collector-config.yaml
+│   ├── prometheus-alerts.yaml
+│   ├── grafana-datasources.yaml
+│   ├── dofus-dashboard.json
+├── templates/
+│   ├── kafka-cluster.yaml
+│   ├── otel-collector-crd.yaml
+│   ├── prometheus-rule.yaml
+│   ├── grafana-dashboard-cm.yaml
+└── README.md
+
+**Component Implementation Details:**
+
+1. **Chart.yaml:**
+   - Define dependencies for `kube-prometheus-stack` and `loki-stack` (disable Promtail).
+
+2. **Kafka (Strimzi) & OpenTelemetry:**
+   - Write the Strimzi CRDs in `templates/kafka-cluster.yaml` (topic: `bot_events`).
+   - Write the OTel config in `configs/otel-collector-config.yaml` to extract the `kamas` metric (gauge, labels: `bot_name`, `server`) from the incoming JSON and forward the raw JSON logs to Loki.
+   - Write the OTel CRD in `templates/otel-collector-crd.yaml` to ingest the config.
+
+3. **Prometheus Alerting:**
+   - Write the alerting rule in `configs/prometheus-alerts.yaml` (Alert if `dofus_bot_kamas` drops by > 500k in 5m).
+   - Write the `PrometheusRule` CRD in `templates/prometheus-rule.yaml`.
+
+4. **Grafana & Loki (Dashboards as Code):**
+   - In `configs/grafana-datasources.yaml`, define the standard Grafana provisioning YAML to add Prometheus and Loki as default datasources.
+   - In `configs/dofus-dashboard.json`, write a valid Grafana JSON dashboard containing two panels: a Time Series graph for the `dofus_bot_kamas` metric, and a Logs panel querying Loki for `{topic="bot_events"}`.
+   - In `templates/grafana-dashboard-cm.yaml`, create a ConfigMap with the label `grafana_dashboard: "1"` that ingests the `dofus-dashboard.json` file.
+   - In `values.yaml`, configure the `kube-prometheus-stack.grafana` section to enable the dashboard sidecar (so it automatically loads the ConfigMap) and mount the `grafana-datasources.yaml` file.
+
+**Deliverables:**
+1. Generate the full directory tree and write all files directly into the workspace.
+2. Ensure the `values.yaml` properly links the Grafana sidecars to the ConfigMaps.
