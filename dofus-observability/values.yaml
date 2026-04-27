@@ -9,9 +9,16 @@ kafka:
   replicas: 2
   version: 4.2.0
   logRetentionHours: 168
+
   storage:
     size: 5Gi
     storageClass: ""
+
+  externalAccess:
+    enabled: true
+    type: loadbalancer
+    port: 9094
+
   resources:
     requests:
       memory: "512Mi"

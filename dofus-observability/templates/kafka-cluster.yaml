@@ -31,6 +31,12 @@ spec:
         port: 9093
         type: internal
         tls: true
+      {{- if .Values.kafka.externalAccess.enabled }}
+      - name: external
+        port: {{ .Values.kafka.externalAccess.port }}
+        type: {{ .Values.kafka.externalAccess.type }}
+        tls: false
+      {{- end }}
     config:
       offsets.topic.replication.factor: {{ .Values.kafka.replicas | default 3 }}
       transaction.state.log.replication.factor: {{ .Values.kafka.replicas | default 3 }}
