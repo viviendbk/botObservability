@@ -1,0 +1,19 @@
+# templates/metallb-config.yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: primary-pool
+  # This MUST stay metallb-system, even though your chart deploys to default
+  namespace: metallb-system 
+spec:
+  addresses:
+  - 192.168.200.240-192.168.200.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2-advertisement
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - primary-pool
