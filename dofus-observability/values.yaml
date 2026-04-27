@@ -59,6 +59,8 @@ ingress-nginx:
       enabled: false
     service:
       type: LoadBalancer
+    admissionWebhooks:
+      enabled: false
 
 # ------------------------------------------------------------------------------
 # Visualization & Alerting (Prometheus & Grafana)
