@@ -9,6 +9,7 @@ kafka:
   replicas: 2
   version: 4.2.0
   logRetentionHours: 168
+  metadataVersion: "3.7"
 
   storage:
     size: 5Gi
