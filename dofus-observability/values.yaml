@@ -117,8 +117,7 @@ otel-collector:
       - apiGroups: [ "extensions", "networking.k8s.io" ]
         resources: [ "ingresses" ]
         verbs: [ "get", "list", "watch" ]
-      - apiGroups: [ "nonresource.k8s.io" ]
-        urls: [ "/metrics" ]
+      - nonResourceURLs: [ "/metrics" ]
         verbs: [ "get" ]
 
   config:
