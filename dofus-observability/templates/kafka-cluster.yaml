@@ -15,7 +15,7 @@ spec:
   kafka:
     version: {{ .Values.kafka.version }}
     # This binds the Kafka cluster to the NodePool workers below
-    metadataVersion: {{ .Values.kafka.metadataVersion | default "3.7" }}
+    metadataVersion: "3.7"
     listeners:
       - name: plain
         port: 9092
