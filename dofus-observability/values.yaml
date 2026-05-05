@@ -9,14 +9,13 @@ kafka:
   replicas: 2
   version: 4.2.0
   logRetentionHours: 168
-  metadataVersion: "3.7"
 
   storage:
     size: 5Gi
     storageClass: "local-path"
 
   externalAccess:
-    enabled: true
+    enabled: false
     type: loadbalancer
     port: 9094
 
