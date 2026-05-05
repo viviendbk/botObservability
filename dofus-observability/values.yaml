@@ -12,7 +12,7 @@ kafka:
 
   storage:
     size: 5Gi
-    storageClass: ""
+    storageClass: "local-path"
 
   externalAccess:
     enabled: true
