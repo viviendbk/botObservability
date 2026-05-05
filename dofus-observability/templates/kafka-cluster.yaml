@@ -1,3 +1,4 @@
+
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
@@ -9,9 +10,8 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
   annotations:
-    # 1. TRAP AVERTED: Put quotes around "enabled"
-    strimzi.io/node-pools: "enabled"
-    strimzi.io/kraft: "enabled"
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
 spec:
   kafka:
     version: {{ .Values.kafka.version }}
@@ -49,8 +49,7 @@ spec:
     topicOperator: {}
     userOperator: {}
 ---
-# 2. TRAP AVERTED: Must be v1beta2!
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: dual-role
