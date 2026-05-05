@@ -80,6 +80,8 @@ kube-prometheus-stack:
       ingressClassName: nginx
       hosts:
         - prometheus.dofus.local
+    prometheusSpec:
+      enableRemoteWriteReceiver: true
   grafana:
     enabled: true
     adminPassword: "admin"
@@ -105,6 +107,20 @@ otel-collector:
   image:
     repository: "otel/opentelemetry-collector-contrib"
     tag: "0.100.0"
+
+  clusterRole:
+    create: true
+    rules:
+      - apiGroups: [ "" ]
+        resources: [ "nodes", "nodes/proxy", "services", "endpoints", "pods" ]
+        verbs: [ "get", "list", "watch" ]
+      - apiGroups: [ "extensions", "networking.k8s.io" ]
+        resources: [ "ingresses" ]
+        verbs: [ "get", "list", "watch" ]
+      - apiGroups: [ "nonresource.k8s.io" ]
+        urls: [ "/metrics" ]
+        verbs: [ "get" ]
+
   config:
     receivers:
       kafka:
@@ -114,24 +130,51 @@ otel-collector:
         group_id: otel-log-readers
         initial_offset: earliest
         encoding: json
+
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: "otel-kubernetes-pods"
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
+                  action: keep
+                  regex: true
+
     processors:
       batch:
         send_batch_size: 1000
         timeout: 1s
+
     exporters:
       debug:
         verbosity: detailed
+
       loki:
         endpoint: "http://dofus-observability-loki.default.svc.cluster.local:3100/loki/\
           api/v1/push"
+
+      prometheusremotewrite:
+        endpoint: "http://dofus-observability-kube-p-prometheus.default.svc.cluster.loc\
+          al:9090/api/v1/write"
+        tls:
+          insecure: true
+
     service:
       telemetry:
         metrics:
           readers: []
+
       pipelines:
         traces: null
-        metrics: null
+
         logs:
           receivers: [ kafka ]
           processors: [ batch ]
           exporters: [ debug, loki ]
+
+        metrics:
+          receivers: [ prometheus ]
+          processors: [ batch ]
+          exporters: [ debug, prometheusremotewrite ]
