@@ -146,7 +146,7 @@ otel-collector:
         send_batch_size: 1000
         timeout: 1s
 
-transform:
+      transform:
         error_mode: ignore
         log_statements:
           - context: log
