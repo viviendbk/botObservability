@@ -128,7 +128,7 @@ otel-collector:
         topic: bot_events
         group_id: otel-log-readers
         initial_offset: earliest
-        encoding: raw
+        encoding: json
 
       prometheus:
         config:
@@ -151,10 +151,8 @@ otel-collector:
         log_statements:
           - context: log
             statements:
-              - set(body, String(body))
-              - set(cache, ParseJSON(body))
-              - set(resource.attributes["level"], cache["level"])
-              - set(resource.attributes["server"], cache["character"]["server"])
+              - set(resource.attributes["level"], body["level"])
+              - set(resource.attributes["server"], body["character"]["server"])
               - set(resource.attributes["env"], "prod")
               - set(resource.attributes["source"], "snowbot")
 
