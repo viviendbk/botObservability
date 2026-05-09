@@ -128,7 +128,7 @@ otel-collector:
         topic: bot_events
         group_id: otel-log-readers
         initial_offset: earliest
-        encoding: utf-8
+        encoding: raw
 
       prometheus:
         config:
