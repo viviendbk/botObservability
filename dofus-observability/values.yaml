@@ -146,7 +146,7 @@ otel-collector:
         send_batch_size: 1000
         timeout: 1s
 
-      transform:
+transform:
         error_mode: ignore
         log_statements:
           - context: log
@@ -154,6 +154,8 @@ otel-collector:
               - set(cache, ParseJSON(body))
               - set(resource.attributes["level"], cache["level"])
               - set(resource.attributes["server"], cache["character"]["server"])
+              - set(resource.attributes["env"], "prod")
+              - set(resource.attributes["source"], "snowbot")
 
     exporters:
       debug:
@@ -162,9 +164,6 @@ otel-collector:
       loki:
         endpoint: "http://dofus-observability-loki.default.svc.cluster.local:3100/loki/\
           api/v1/push"
-        default_labels:
-          env: "prod"
-          source: "snowbot"
 
       prometheusremotewrite:
         endpoint: "http://dofus-observability-kube-p-prometheus.default.svc.cluster.loc\
