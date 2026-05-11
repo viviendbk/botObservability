@@ -156,7 +156,7 @@ otel-collector:
               - set(resource.attributes["source"], "snowbot")
               - set(resource.attributes["botType"], body["botType"])
               - set(resource.attributes["loki.resource.labels"], "level, server,
-                source")
+                source, botType")
 
     exporters:
       debug:
