@@ -161,12 +161,11 @@ otel-collector:
         log_statements:
           - context: log
             statements:
-              - set(resource.attributes["level"], body["level"])
               - set(resource.attributes["server"], body["character"]["server"])
               - set(resource.attributes["source"], "snowbot")
               - set(resource.attributes["botType"], body["botType"])
-              - set(resource.attributes["loki.resource.labels"], "level, server,
-                source, botType")
+              - set(resource.attributes["loki.resource.labels"], "server, source,
+                botType")
 
     exporters:
       debug:
