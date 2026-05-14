@@ -34,6 +34,8 @@ kafka:
 # -----------------------------------------------------------------------------
 # loki-stack (Sub-chart)
 # -----------------------------------------------------------------------------
+# loki-stack (Sub-chart)
+# -----------------------------------------------------------------------------
 loki-stack:
   enabled: true
   promtail:
@@ -44,9 +46,10 @@ loki-stack:
       storageClassName: ""
       size: 2Gi
 
-    # Activate the Ruler to process your bot-alerts.yaml
+    # 1. DATABASE CONFIGURATION
     config:
       ruler:
+        enable_api: true
         storage:
           type: local
           local:
@@ -56,21 +59,21 @@ loki-stack:
         ring:
           kvstore:
             store: inmemory
-        enable_api: true
 
-      # Mount the ConfigMap we created in templates/loki-alerts-cm.yaml
-      extraVolumes:
-        - name: loki-alerts-volume
-          configMap:
-            name: "dofus-observability-loki-alerts"
-        - name: tmp-rules
-          emptyDir: {}
+    # 2. POD VOLUMES (Level with 'config' and 'persistence')
+    extraVolumes:
+      - name: loki-alerts-volume
+        configMap:
+          name: "dofus-observability-loki-alerts"
+      - name: tmp-rules
+        emptyDir: {}
 
-      extraVolumeMounts:
-        - name: loki-alerts-volume
-          mountPath: /etc/loki/rules/fake
-        - name: tmp-rules
-          mountPath: /tmp/loki/rules-temp
+    # 3. CONTAINER MOUNTS (Level with 'config' and 'persistence')
+    extraVolumeMounts:
+      - name: loki-alerts-volume
+        mountPath: /etc/loki/rules/fake
+      - name: tmp-rules
+        mountPath: /tmp/loki/rules-temp
 
 strimzi-kafka-operator:
   enabled: true
