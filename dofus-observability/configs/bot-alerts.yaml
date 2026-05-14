@@ -32,25 +32,48 @@ groups:
       # ---------------------------------------------------------
       # ALERT 3: Total Kamas Drop (Brut + Bank + HDV)
       # ---------------------------------------------------------
-      - alert: TotalKamasDrop
-        expr: >
-          (
-            (
-              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [1h])) +
-              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [1h])) +
-              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [1h]))
-            )
-            -
-            (
-              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [5m])) +
-              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [5m])) +
-              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [5m]))
-            )
-          ) > 10
+      # - alert: TotalKamasDrop
+      #   expr: >
+      #     (
+      #       (
+      #         sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [1h])) +
+      #         sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [1h])) +
+      #         sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [1h]))
+      #       )
+      #       -
+      #       (
+      #         sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [5m])) +
+      #         sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [5m])) +
+      #         sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [5m]))
+      #       )
+      #     ) > 10
+      #   for: 0m
+      #   labels:
+      #     severity: warning
+      #     source: loki
+      #   annotations:
+      #     summary: "📉 Kamas Total dropped on {{ $labels.bot_id }}"
+      #     description: "Bot {{ $labels.bot_id }} on {{ $labels.server }} lost more than 10 total kamas (brut+bank+hdv) over the last hour."
+      # ---------------------------------------------------------
+      # ALERT 4: Zero Controller Log Ingestion
+      # ---------------------------------------------------------
+      - alert: ZeroControllerLogIngestion
+        # This one was already perfect!
+        expr: absent_over_time({exporter="OTLP",botType=~"Controller"}[20m])
         for: 0m
+        labels:
+          severity: critical
+          source: loki
+        annotations:
+          summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
+          description: "Loki has not received a single log from the OTLP exporter in 20 minutes."
+
+      - alert: ZeroBotConnected
+        expr: sum(last_over_time({exporter="OTLP", source="snowbot", botType=~"Controller.*"} | json count="body.connectedAccountsCount" | count >= 0 | unwrap count | __error__="" [5m])) == 0
+        for: 20m
         labels:
           severity: warning
           source: loki
         annotations:
-          summary: "📉 Kamas Total dropped on {{ $labels.bot_id }}"
-          description: "Bot {{ $labels.bot_id }} on {{ $labels.server }} lost more than 10 total kamas (brut+bank+hdv) over the last hour."
+          summary: "📉 Bot {{ $labels.bot_id }} on {{ $labels.server }} stopped sending logs (rate = 0)"
+          description: "Bot {{ $labels.bot_id }} on {{ $labels.server }} has not sent logs for 5 minutes."
