@@ -47,6 +47,7 @@ loki-stack:
     # Activate the Ruler to process your bot-alerts.yaml
     config:
       ruler:
+        enable_api: true
         storage:
           type: local
           local:
