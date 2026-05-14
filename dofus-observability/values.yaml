@@ -63,10 +63,14 @@ loki-stack:
       - name: loki-alerts-volume
         configMap:
           name: "dofus-observability-loki-alerts"
+      - name: tmp-rules
+        emptyDir: {}
 
     extraVolumeMounts:
       - name: loki-alerts-volume
         mountPath: /etc/loki/rules/fake
+      - name: tmp-rules
+        mountPath: /tmp/loki/rules-temp
 
 strimzi-kafka-operator:
   enabled: true
