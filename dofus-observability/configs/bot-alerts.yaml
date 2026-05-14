@@ -5,9 +5,8 @@ groups:
       # ALERT 1: Banned Account Detected
       # ---------------------------------------------------------
       - alert: BannedAccountDetected
+        # FIXED: Moved __error__="" before the range [30m]
         expr: sum(last_over_time({exporter="OTLP"} | json count="body.bannedAccountsCount" | unwrap count | __error__="" [30m])) > 0
-
-        # Trigger if it stays > 0 for 1 minute
         for: 1m
         labels:
           severity: critical
@@ -20,14 +19,12 @@ groups:
       # ALERT 2: Zero Ingestion (Pipeline Failure)
       # ---------------------------------------------------------
       - alert: ZeroLogIngestion
-        # Trigger if this specific stream is completely missing for 20 straight minutes
+        # This one was already perfect!
         expr: absent_over_time({exporter="OTLP"}[20m])
-
-        # We don't need a 'for' delay here because the 20m window is already built into the query above!
         for: 0m
         labels:
           severity: critical
           team: infrastructure
         annotations:
           summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
-          description: "Loki has not received a single log from the OTLP exporter in 20 minutes. The bot server may be down or the network is partitioned."
+          description: "Loki has not received a single log from the OTLP exporter in 20 minutes."
