@@ -140,63 +140,61 @@ kube-prometheus-stack:
       ingressClassName: nginx
       hosts:
         - alertmanager.dofus.local
-      config:
-        global:
-          resolve_timeout: 5m
+    config:
+      global:
+        resolve_timeout: 5m
 
-        route:
-          group_by: ["alertname", "server"]
-          group_wait: 30s
-          group_interval: 5m
-          repeat_interval: 4h
+      route:
+        group_by: ["alertname", "server"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
 
-          # -------------------------------------------------------------
-          # THE DEFAULT: If an alert doesn't have a specific rule,
-          # assume it's a Prometheus/System alert and send it to Infra.
-          # -------------------------------------------------------------
-          receiver: "prometheus-alerts"
+        # -------------------------------------------------------------
+        # THE DEFAULT: If an alert doesn't have a specific rule,
+        # assume it's a Prometheus/System alert and send it to Infra.
+        # -------------------------------------------------------------
+        receiver: "prometheus-alerts"
 
-          routes:
-            # 1. BOT ALERTS: Intercept anything with the label 'source="loki"'
-            - matchers:
-                - source="loki"
-              receiver: "loki-alerts"
-              # Nested rule: If it's a bot alert AND it's critical, send it faster!
-              routes:
-                - matchers:
-                    - severity="critical"
-                  receiver: "loki-alerts"
-                  group_wait: 10s
+        routes:
+          # 1. BOT ALERTS: Intercept anything with the label 'source="loki"'
+          - matchers:
+              - source="loki"
+            receiver: "loki-alerts"
+            # Nested rule: If it's a bot alert AND it's critical, send it faster!
+            routes:
+              - matchers:
+                  - severity="critical"
+                receiver: "loki-alerts"
+                group_wait: 10s
 
-        # ===============================================================
-        # THE RECEIVERS (Your Discord Webhooks)
-        # ===============================================================
-        receivers:
-          - name: "blackhole"
+      # ===============================================================
+      # THE RECEIVERS (Your Discord Webhooks)
+      # ===============================================================
+      receivers:
+        # The Infra Destination (Prometheus/Kubernetes)
+        - name: "prometheus-alerts"
+          discord_configs:
+            - webhook_url: "https://discordapp.com/api/webhooks/1504429797059592296/gyva0v-6N_wBvKN9EM9GTNTr91hfwZttykKNR2xrmGs68VfLpHZlmRDP8G3q3lnNucFd"
+              title: "🔧 SYSTEM {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
+              message: |-
+                {{ range .Alerts }}
+                **Summary:** {{ .Annotations.summary }}
+                **Details:** {{ .Annotations.description }}
+                -------------------------------------------
+                {{ end }}
 
-          # The Infra Destination (Prometheus/Kubernetes)
-          - name: "prometheus-alerts"
-            discord_configs:
-              - webhook_url: "https://discordapp.com/api/webhooks/1504429797059592296/gyva0v-6N_wBvKN9EM9GTNTr91hfwZttykKNR2xrmGs68VfLpHZlmRDP8G3q3lnNucFd"
-                title: "🔧 SYSTEM {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
-                message: |-
-                  {{ range .Alerts }}
-                  **Summary:** {{ .Annotations.summary }}
-                  **Details:** {{ .Annotations.description }}
-                  -------------------------------------------
-                  {{ end }}
-
-          # The Bot Destination (Loki)
-          - name: "loki-alerts"
-            discord_configs:
-              - webhook_url: "https://discordapp.com/api/webhooks/1504421877290893375/pFGMLOT6OBxhpAf-h0W8ZTLI5TYaOIdxziN5ICTufPXiBUkU285RbwsB8utsbWYjh1yG"
-                title: "🤖 BOT {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
-                message: |-
-                  {{ range .Alerts }}
-                  **Summary:** {{ .Annotations.summary }}
-                  **Bot:** {{ .Labels.bot_id }} | **Server:** {{ .Labels.server }}
-                  -------------------------------------------
-                  {{ end }}
+        # The Bot Destination (Loki)
+        - name: "loki-alerts"
+          discord_configs:
+            - webhook_url: "https://discordapp.com/api/webhooks/1504421877290893375/pFGMLOT6OBxhpAf-h0W8ZTLI5TYaOIdxziN5ICTufPXiBUkU285RbwsB8utsbWYjh1yG"
+              title: "🤖 BOT {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
+              message: |-
+                {{ range .Alerts }}
+                **Summary:** {{ .Annotations.summary }}
+                **Bot:** {{ .Labels.bot_id }} | **Server:** {{ .Labels.server }}
+                -------------------------------------------
+                {{ end }}
 
 # ------------------------------------------------------------------------------
 # OpenTelemetry Collector Configuration
