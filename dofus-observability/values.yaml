@@ -74,6 +74,7 @@ kube-prometheus-stack:
       ingressClassName: nginx
       hosts:
         - alertmanager.dofus.local
+
   prometheus:
     ingress:
       enabled: true
@@ -82,9 +83,17 @@ kube-prometheus-stack:
         - prometheus.dofus.local
     prometheusSpec:
       enableRemoteWriteReceiver: true
+
   grafana:
     enabled: true
     adminPassword: "admin"
+    persistence:
+      enabled: true
+      type: pvc
+      size: 2Gi
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: "local-path"
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -111,14 +120,14 @@ otel-collector:
   clusterRole:
     create: true
     rules:
-      - apiGroups: [ "" ]
-        resources: [ "nodes", "nodes/proxy", "services", "endpoints", "pods" ]
-        verbs: [ "get", "list", "watch" ]
-      - apiGroups: [ "extensions", "networking.k8s.io" ]
-        resources: [ "ingresses" ]
-        verbs: [ "get", "list", "watch" ]
-      - nonResourceURLs: [ "/metrics" ]
-        verbs: [ "get" ]
+      - apiGroups: [""]
+        resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["extensions", "networking.k8s.io"]
+        resources: ["ingresses"]
+        verbs: ["get", "list", "watch"]
+      - nonResourceURLs: ["/metrics"]
+        verbs: ["get"]
 
   config:
     receivers:
@@ -137,7 +146,8 @@ otel-collector:
               kubernetes_sd_configs:
                 - role: pod
               relabel_configs:
-                - source_labels: [ __meta_kubernetes_pod_annotation_prometheus_io_scrape ]
+                - source_labels:
+                    [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
                   action: keep
                   regex: true
 
@@ -163,11 +173,13 @@ otel-collector:
         verbosity: detailed
 
       loki:
-        endpoint: "http://dofus-observability-loki.default.svc.cluster.local:3100/loki/\
+        endpoint:
+          "http://dofus-observability-loki.default.svc.cluster.local:3100/loki/\
           api/v1/push"
 
       prometheusremotewrite:
-        endpoint: "http://dofus-observability-kube-p-prometheus.default.svc.cluster.loc\
+        endpoint:
+          "http://dofus-observability-kube-p-prometheus.default.svc.cluster.loc\
           al:9090/api/v1/write"
         tls:
           insecure: true
@@ -181,11 +193,11 @@ otel-collector:
         traces: null
 
         logs:
-          receivers: [ kafka ]
-          processors: [ transform, batch ]
-          exporters: [ debug, loki ]
+          receivers: [kafka]
+          processors: [transform, batch]
+          exporters: [debug, loki]
 
         metrics:
-          receivers: [ prometheus ]
-          processors: [ batch ]
-          exporters: [ debug, prometheusremotewrite ]
+          receivers: [prometheus]
+          processors: [batch]
+          exporters: [debug, prometheusremotewrite]
