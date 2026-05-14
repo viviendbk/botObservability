@@ -35,14 +35,14 @@ groups:
           (
             (
               sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [1h])) +
-              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bank" | unwrap val | __error__="" [1h])) +
-              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.hdv" | unwrap val | __error__="" [1h]))
+              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [1h])) +
+              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [1h]))
             )
             -
             (
               sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [5m])) +
-              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bank" | unwrap val | __error__="" [5m])) +
-              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.hdv" | unwrap val | __error__="" [5m]))
+              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inBank" | unwrap val | __error__="" [5m])) +
+              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.inHdv" | unwrap val | __error__="" [5m]))
             )
           ) > 10
         for: 1m
