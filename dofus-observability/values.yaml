@@ -264,7 +264,7 @@ otel-collector:
                 - source_labels: [__meta_kubernetes_service_name]
                   action: keep
                   # Matches the service name created by kube-prometheus-stack
-                  regex: dofus-observability-kube-p-prometheus-node-exporter
+                  regex: dofus-observability-prometheus-node-exporter
 
             # 3. NEW: Scrape Kube State Metrics (Kubernetes Status Metrics)
             - job_name: "otel-kube-state-metrics"
@@ -274,7 +274,7 @@ otel-collector:
                 - source_labels: [__meta_kubernetes_service_name]
                   action: keep
                   # Matches the service name created by kube-prometheus-stack
-                  regex: dofus-observability-kube-s-kube-state-metrics
+                  regex: dofus-observability-kube-state-metrics
 
     processors:
       batch:
