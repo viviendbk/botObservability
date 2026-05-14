@@ -280,6 +280,12 @@ otel-collector:
             - job_name: "etcd"
               # etcd metrics are almost always exposed on port 2381
               metrics_path: /metrics
+              scheme: https
+              tls_config:
+                ca_file: /etc/kubernetes/pki/etcd/ca.crt
+                cert_file: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+                key_file: /etc/kubernetes/pki/etcd/healthcheck-client.key
+                insecure_skip_verify: true
               kubernetes_sd_configs:
                 - role: pod
                   # etcd always lives in the kube-system namespace
