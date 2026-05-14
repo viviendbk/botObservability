@@ -223,6 +223,17 @@ otel-collector:
     repository: "otel/opentelemetry-collector-contrib"
     tag: "0.100.0"
 
+  extraVolumes:
+    - name: etcd-certs
+      hostPath:
+        path: /etc/kubernetes/pki/etcd
+        type: DirectoryOrCreate
+
+  extraVolumeMounts:
+    - name: etcd-certs
+      mountPath: /etc/kubernetes/pki/etcd
+      readOnly: true
+
   clusterRole:
     create: true
     rules:
