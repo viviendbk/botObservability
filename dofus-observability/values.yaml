@@ -66,9 +66,7 @@ loki-stack:
 
     extraVolumeMounts:
       - name: loki-alerts-volume
-        # The 'fake' directory is strictly required by Loki's single-tenant architecture
         mountPath: /etc/loki/rules/fake
-        subPath: bot-alerts.yaml
 
 strimzi-kafka-operator:
   enabled: true
