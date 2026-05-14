@@ -59,7 +59,7 @@ groups:
       # ---------------------------------------------------------
       - alert: ZeroControllerLogIngestion
         # This one was already perfect!
-        expr: absent_over_time({exporter="OTLP",botType=~"Controller"}[20m])
+        expr: absent_over_time({exporter="OTLP",botType=~"Controller.*"}[20m])
         for: 0m
         labels:
           severity: critical
