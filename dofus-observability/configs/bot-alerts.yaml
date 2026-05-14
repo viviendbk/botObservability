@@ -1,36 +1,33 @@
-# =============================================================================
-# Prometheus Alerting Rules — Dofus Bot Fleet
-# =============================================================================
-# This file is ingested by the PrometheusRule CRD via Helm's .Files.Get
-# =============================================================================
-
 groups:
-  - name: dofus-bot-alerts
+  - name: bot_fleet_health
     rules:
-      # -----------------------------------------------------------------------
-      # KamasSuddenDrop
-      # Fires when a bot's kamas balance drops by more than 500,000 in a
-      # rolling 5-minute window. This may indicate the bot was banned,
-      # robbed, or experienced an in-game exploit.
-      # -----------------------------------------------------------------------
-      - alert: KamasSuddenDrop
-        expr: |
-          (
-            max_over_time(dofus_bot_kamas[5m])
-            - dofus_bot_kamas
-          ) > 500000
+      # ---------------------------------------------------------
+      # ALERT 1: Banned Account Detected
+      # ---------------------------------------------------------
+      - alert: BannedAccountDetected
+        expr: sum(last_over_time({exporter="OTLP"} | json count="body.bannedAccountsCount" | unwrap count | __error__="" [1d])) > 0
+
+        # Trigger if it stays > 0 for 1 minute
         for: 1m
         labels:
           severity: critical
           team: bot-ops
         annotations:
-          summary: >-
-            Kamas balance dropped by >500k on {{ $labels.bot_name }}
-            (server: {{ $labels.server }})
-          description: >-
-            The bot "{{ $labels.bot_name }}" on server "{{ $labels.server }}"
-            has lost more than 500,000 kamas in the last 5 minutes.
-            Current value: {{ $value | humanize }} kamas delta.
-            Investigate immediately for potential ban or exploit.
-          runbook_url: https://wiki.internal/runbooks/kamas-drop
-          dashboard_url: https://grafana.internal/d/dofus-bots/dofus-bot-fleet
+          summary: "🚨 CRITICAL: Banned Account Detected"
+          description: "One or more bots have been banned by the server!"
+
+      # ---------------------------------------------------------
+      # ALERT 2: Zero Ingestion (Pipeline Failure)
+      # ---------------------------------------------------------
+      - alert: ZeroLogIngestion
+        # Trigger if this specific stream is completely missing for 20 straight minutes
+        expr: absent_over_time({exporter="OTLP"}[20m])
+
+        # We don't need a 'for' delay here because the 20m window is already built into the query above!
+        for: 0m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
+          description: "Loki has not received a single log from the OTLP exporter in 20 minutes. The bot server may be down or the network is partitioned."
