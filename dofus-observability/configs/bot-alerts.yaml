@@ -1,11 +1,11 @@
 groups:
-  - name: bot_fleet_health
+  - name: dofus-bot-alerts
     rules:
       # ---------------------------------------------------------
       # ALERT 1: Banned Account Detected
       # ---------------------------------------------------------
       - alert: BannedAccountDetected
-        expr: sum(last_over_time({exporter="OTLP"} | json count="body.bannedAccountsCount" | unwrap count | __error__="" [1d])) > 0
+        expr: sum(last_over_time({exporter="OTLP"} | json count="body.bannedAccountsCount" | unwrap count | __error__="" [30m])) > 0
 
         # Trigger if it stays > 0 for 1 minute
         for: 1m
