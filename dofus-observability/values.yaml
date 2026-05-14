@@ -276,6 +276,31 @@ otel-collector:
                   # Matches the service name created by kube-prometheus-stack
                   regex: dofus-observability-kube-state-metrics
 
+            # 4. NEW: Scrape the Kubernetes Brain (etcd)
+            - job_name: "etcd"
+              # etcd metrics are almost always exposed on port 2381
+              metrics_path: /metrics
+              kubernetes_sd_configs:
+                - role: pod
+                  # etcd always lives in the kube-system namespace
+                  namespaces:
+                    names: ["kube-system"]
+              relabel_configs:
+                # Only keep pods that have the label 'component=etcd'
+                - source_labels: [__meta_kubernetes_pod_label_component]
+                  action: keep
+                  regex: etcd
+                # Rewrite the port to 2381 (the standard etcd metrics port)
+                - action: replace
+                  source_labels: [__address__]
+                  regex: ([^:]+)(?::\d+)?
+                  replacement: $1:2381
+                  target_label: __address__
+                # Set the instance label to the Node name so Grafana variables work!
+                - action: replace
+                  source_labels: [__meta_kubernetes_pod_node_name]
+                  target_label: instance
+
     processors:
       batch:
         send_batch_size: 1000
