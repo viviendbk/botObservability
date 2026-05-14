@@ -54,7 +54,7 @@ loki-stack:
             directory: /etc/loki/rules
         rule_path: /tmp/loki/rules-temp
         # Dynamically points to Alertmanager based on your Helm release name
-        alertmanager_url: "http://dofus-observability-kube-prometheus-alertmanager.default.svc.cluster.local:9093"
+        alertmanager_url: "http://dofus-observability-kube-p-alertmanager.default.svc.cluster.local:9093"
         ring:
           kvstore:
             store: inmemory
@@ -223,17 +223,6 @@ otel-collector:
     repository: "otel/opentelemetry-collector-contrib"
     tag: "0.100.0"
 
-  extraVolumes:
-    - name: etcd-certs
-      hostPath:
-        path: /etc/kubernetes/pki/etcd
-        type: DirectoryOrCreate
-
-  extraVolumeMounts:
-    - name: etcd-certs
-      mountPath: /etc/kubernetes/pki/etcd
-      readOnly: true
-
   clusterRole:
     create: true
     rules:
@@ -286,37 +275,6 @@ otel-collector:
                   action: keep
                   # Matches the service name created by kube-prometheus-stack
                   regex: dofus-observability-kube-state-metrics
-
-            # 4. NEW: Scrape the Kubernetes Brain (etcd)
-            - job_name: "etcd"
-              # etcd metrics are almost always exposed on port 2381
-              metrics_path: /metrics
-              scheme: https
-              tls_config:
-                ca_file: /etc/kubernetes/pki/etcd/ca.crt
-                cert_file: /etc/kubernetes/pki/etcd/healthcheck-client.crt
-                key_file: /etc/kubernetes/pki/etcd/healthcheck-client.key
-                insecure_skip_verify: true
-              kubernetes_sd_configs:
-                - role: pod
-                  # etcd always lives in the kube-system namespace
-                  namespaces:
-                    names: ["kube-system"]
-              relabel_configs:
-                # Only keep pods that have the label 'component=etcd'
-                - source_labels: [__meta_kubernetes_pod_label_component]
-                  action: keep
-                  regex: etcd
-                # Rewrite the port to 2381 (the standard etcd metrics port)
-                - action: replace
-                  source_labels: [__address__]
-                  regex: ([^:]+)(?::\d+)?
-                  replacement: $1:2381
-                  target_label: __address__
-                # Set the instance label to the Node name so Grafana variables work!
-                - action: replace
-                  source_labels: [__meta_kubernetes_pod_node_name]
-                  target_label: instance
 
     processors:
       batch:
