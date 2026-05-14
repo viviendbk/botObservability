@@ -134,6 +134,11 @@ kube-prometheus-stack:
         url: http://dofus-observability-loki.default.svc.cluster.local:3100
         access: proxy
         isDefault: false
+        jsonData:
+          manageAlerts: true
+          httpHeaderName1: "X-Scope-OrgID"
+        secureJsonData:
+          httpHeaderValue1: "fake"
 
 # ------------------------------------------------------------------------------
 # OpenTelemetry Collector Configuration
