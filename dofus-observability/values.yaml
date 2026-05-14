@@ -97,6 +97,11 @@ ingress-nginx:
 kube-prometheus-stack:
   enabled: true
 
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+
   prometheus:
     ingress:
       enabled: true
@@ -105,6 +110,17 @@ kube-prometheus-stack:
         - prometheus.dofus.local
     prometheusSpec:
       enableRemoteWriteReceiver: true
+      # =================================================================
+      # THE LOBOTOMY: Tell Prometheus to ignore all default scraping targets
+      # =================================================================
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector:
+        matchLabels:
+          scrape-engine: "opentelemetry-only" # Fake label, so it finds nothing
+      podMonitorSelector:
+        matchLabels:
+          scrape-engine: "opentelemetry-only" # Fake label, so it finds nothing
 
   grafana:
     enabled: true
@@ -240,6 +256,25 @@ otel-collector:
                     [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
                   action: keep
                   regex: true
+            # 2. NEW: Scrape Node Exporter (Server Hardware Metrics)
+            - job_name: "otel-node-exporter"
+              kubernetes_sd_configs:
+                - role: endpoints
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_service_name]
+                  action: keep
+                  # Matches the service name created by kube-prometheus-stack
+                  regex: dofus-observability-kube-p-prometheus-node-exporter
+
+            # 3. NEW: Scrape Kube State Metrics (Kubernetes Status Metrics)
+            - job_name: "otel-kube-state-metrics"
+              kubernetes_sd_configs:
+                - role: endpoints
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_service_name]
+                  action: keep
+                  # Matches the service name created by kube-prometheus-stack
+                  regex: dofus-observability-kube-s-kube-state-metrics
 
     processors:
       batch:
