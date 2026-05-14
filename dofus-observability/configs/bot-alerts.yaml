@@ -65,7 +65,7 @@ groups:
           severity: critical
           source: loki
         annotations:
-          summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
+          summary: "⚠️ SYSTEM OFFLINE: Controller Log Ingestion Stopped"
           description: "Loki has not received a single log from the OTLP exporter in 20 minutes."
 
       - alert: ZeroBotConnected

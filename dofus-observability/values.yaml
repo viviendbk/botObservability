@@ -55,6 +55,7 @@ loki-stack:
         rule_path: /tmp/loki/rules-temp
         # Dynamically points to Alertmanager based on your Helm release name
         alertmanager_url: "http://dofus-observability-kube-p-alertmanager.default.svc.cluster.local:9093"
+        enable_alertmanager_v2: true
         ring:
           kvstore:
             store: inmemory
