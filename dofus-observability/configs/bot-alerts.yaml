@@ -10,7 +10,6 @@ groups:
         for: 1m
         labels:
           severity: critical
-          team: bot-ops
         annotations:
           summary: "🚨 CRITICAL: Banned Account Detected"
           description: "One or more bots have been banned by the server!"
@@ -24,7 +23,32 @@ groups:
         for: 0m
         labels:
           severity: critical
-          team: infrastructure
         annotations:
           summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
           description: "Loki has not received a single log from the OTLP exporter in 20 minutes."
+
+      # ---------------------------------------------------------
+      # ALERT 3: Total Kamas Drop (Brut + Bank + HDV)
+      # ---------------------------------------------------------
+      - alert: TotalKamasDrop
+        expr: >
+          (
+            (
+              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [1h])) +
+              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bank" | unwrap val | __error__="" [1h])) +
+              sum by (bot_id, server) (max_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.hdv" | unwrap val | __error__="" [1h]))
+            )
+            -
+            (
+              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bruts" | unwrap val | __error__="" [5m])) +
+              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.bank" | unwrap val | __error__="" [5m])) +
+              sum by (bot_id, server) (last_over_time({exporter="OTLP"} | json bot_id="body.character.id", server="body.character.server", val="body.kamas.hdv" | unwrap val | __error__="" [5m]))
+            )
+          ) > 10
+        for: 1m
+        labels:
+          severity: warning
+          team: bot-ops
+        annotations:
+          summary: "📉 Kamas Total dropped on {{ $labels.bot_id }}"
+          description: "Bot {{ $labels.bot_id }} on {{ $labels.server }} lost more than 10 total kamas (brut+bank+hdv) over the last hour."
