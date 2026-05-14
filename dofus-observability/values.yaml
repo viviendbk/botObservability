@@ -45,32 +45,32 @@ loki-stack:
       size: 2Gi
 
     # Activate the Ruler to process your bot-alerts.yaml
-config:
+    config:
       ruler:
         storage:
           type: local
           local:
             directory: /etc/loki/rules
-        rule_path: /tmp/loki/rules-temp 
+        rule_path: /tmp/loki/rules-temp
         alertmanager_url: "http://dofus-observability-kube-prometheus-alertmanager.default.svc.cluster.local:9093"
         ring:
           kvstore:
             store: inmemory
         enable_api: true
 
-    # Mount the ConfigMap we created in templates/loki-alerts-cm.yaml
-    extraVolumes:
-      - name: loki-alerts-volume
-        configMap:
-          name: "dofus-observability-loki-alerts"
-      - name: tmp-rules
-        emptyDir: {}
+      # Mount the ConfigMap we created in templates/loki-alerts-cm.yaml
+      extraVolumes:
+        - name: loki-alerts-volume
+          configMap:
+            name: "dofus-observability-loki-alerts"
+        - name: tmp-rules
+          emptyDir: {}
 
-    extraVolumeMounts:
-      - name: loki-alerts-volume
-        mountPath: /etc/loki/rules/fake
-      - name: tmp-rules
-        mountPath: /tmp/loki/rules-temp
+      extraVolumeMounts:
+        - name: loki-alerts-volume
+          mountPath: /etc/loki/rules/fake
+        - name: tmp-rules
+          mountPath: /tmp/loki/rules-temp
 
 strimzi-kafka-operator:
   enabled: true
