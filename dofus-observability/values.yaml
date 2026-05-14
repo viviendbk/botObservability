@@ -34,8 +34,6 @@ kafka:
 # -----------------------------------------------------------------------------
 # loki-stack (Sub-chart)
 # -----------------------------------------------------------------------------
-# loki-stack (Sub-chart)
-# -----------------------------------------------------------------------------
 loki-stack:
   enabled: true
   promtail:
@@ -46,34 +44,29 @@ loki-stack:
       storageClassName: ""
       size: 2Gi
 
-    # 1. DATABASE CONFIGURATION
+    # Activate the Ruler to process your bot-alerts.yaml
     config:
       ruler:
-        enable_api: true
         storage:
           type: local
           local:
             directory: /etc/loki/rules
         rule_path: /tmp/loki/rules-temp
+        # Dynamically points to Alertmanager based on your Helm release name
         alertmanager_url: "http://dofus-observability-kube-prometheus-alertmanager.default.svc.cluster.local:9093"
         ring:
           kvstore:
             store: inmemory
 
-      # 2. POD VOLUMES (Level with 'config' and 'persistence')
-      extraVolumes:
-        - name: loki-alerts-volume
-          configMap:
-            name: "dofus-observability-loki-alerts"
-        - name: tmp-rules
-          emptyDir: {}
+    # Mount the ConfigMap we created in templates/loki-alerts-cm.yaml
+    extraVolumes:
+      - name: loki-alerts-volume
+        configMap:
+          name: "dofus-observability-loki-alerts"
 
-      # 3. CONTAINER MOUNTS (Level with 'config' and 'persistence')
-      extraVolumeMounts:
-        - name: loki-alerts-volume
-          mountPath: /etc/loki/rules/fake
-        - name: tmp-rules
-          mountPath: /tmp/loki/rules-temp
+    extraVolumeMounts:
+      - name: loki-alerts-volume
+        mountPath: /etc/loki/rules/fake
 
 strimzi-kafka-operator:
   enabled: true
