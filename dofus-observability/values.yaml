@@ -60,20 +60,20 @@ loki-stack:
           kvstore:
             store: inmemory
 
-    # 2. POD VOLUMES (Level with 'config' and 'persistence')
-    extraVolumes:
-      - name: loki-alerts-volume
-        configMap:
-          name: "dofus-observability-loki-alerts"
-      - name: tmp-rules
-        emptyDir: {}
+      # 2. POD VOLUMES (Level with 'config' and 'persistence')
+      extraVolumes:
+        - name: loki-alerts-volume
+          configMap:
+            name: "dofus-observability-loki-alerts"
+        - name: tmp-rules
+          emptyDir: {}
 
-    # 3. CONTAINER MOUNTS (Level with 'config' and 'persistence')
-    extraVolumeMounts:
-      - name: loki-alerts-volume
-        mountPath: /etc/loki/rules/fake
-      - name: tmp-rules
-        mountPath: /tmp/loki/rules-temp
+      # 3. CONTAINER MOUNTS (Level with 'config' and 'persistence')
+      extraVolumeMounts:
+        - name: loki-alerts-volume
+          mountPath: /etc/loki/rules/fake
+        - name: tmp-rules
+          mountPath: /tmp/loki/rules-temp
 
 strimzi-kafka-operator:
   enabled: true
