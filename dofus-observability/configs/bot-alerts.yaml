@@ -10,6 +10,7 @@ groups:
         for: 1m
         labels:
           severity: critical
+          source: loki
         annotations:
           summary: "🚨 CRITICAL: Banned Account Detected"
           description: "One or more bots have been banned by the server!"
@@ -23,6 +24,7 @@ groups:
         for: 0m
         labels:
           severity: critical
+          source: loki
         annotations:
           summary: "⚠️ SYSTEM OFFLINE: Log Ingestion Stopped"
           description: "Loki has not received a single log from the OTLP exporter in 20 minutes."
@@ -48,7 +50,7 @@ groups:
         for: 1m
         labels:
           severity: warning
-          team: bot-ops
+          source: loki
         annotations:
           summary: "📉 Kamas Total dropped on {{ $labels.bot_id }}"
           description: "Bot {{ $labels.bot_id }} on {{ $labels.server }} lost more than 10 total kamas (brut+bank+hdv) over the last hour."

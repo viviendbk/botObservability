@@ -140,42 +140,63 @@ kube-prometheus-stack:
       ingressClassName: nginx
       hosts:
         - alertmanager.dofus.local
-    config:
-      global:
-        resolve_timeout: 5m
+      config:
+        global:
+          resolve_timeout: 5m
 
-      # 1. THE ROUTER: Decides where alerts go and how to group them
-      route:
-        group_by: ["alertname", "server"]
-        # How long to wait before sending the first notification
-        group_wait: 30s
-        # How long to wait before sending an update to that group
-        group_interval: 5m
-        # How long to wait before reminding you the alert is still firing
-        repeat_interval: 4h
+        route:
+          group_by: ["alertname", "server"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
 
-        receiver: "discord-bot-ops"
+          # -------------------------------------------------------------
+          # THE DEFAULT: If an alert doesn't have a specific rule,
+          # assume it's a Prometheus/System alert and send it to Infra.
+          # -------------------------------------------------------------
+          receiver: "prometheus-alerts"
 
-        routes:
-          - matchers:
-              - severity="critical"
-            receiver: "discord-bot-ops"
-            # Send criticals immediately without waiting
-            group_wait: 10s
+          routes:
+            # 1. BOT ALERTS: Intercept anything with the label 'source="loki"'
+            - matchers:
+                - source="loki"
+              receiver: "loki-alerts"
+              # Nested rule: If it's a bot alert AND it's critical, send it faster!
+              routes:
+                - matchers:
+                    - severity="critical"
+                  receiver: "loki-alerts"
+                  group_wait: 10s
 
-      # 2. THE RECEIVERS: The actual destinations (API keys, URLs, etc.)
-      receivers:
-        - name: "discord-bot-ops"
-          discord_configs:
-            - webhook_url: "https://discordapp.com/api/webhooks/1504421877290893375/pFGMLOT6OBxhpAf-h0W8ZTLI5TYaOIdxziN5ICTufPXiBUkU285RbwsB8utsbWYjh1yG"
-              title: "{{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
-              message: |-
-                {{ range .Alerts }}
-                **Summary:** {{ .Annotations.summary }}
-                **Details:** {{ .Annotations.description }}
-                **Bot:** {{ .Labels.bot_id }} | **Server:** {{ .Labels.server }}
-                -------------------------------------------
-                {{ end }}
+        # ===============================================================
+        # THE RECEIVERS (Your Discord Webhooks)
+        # ===============================================================
+        receivers:
+          - name: "blackhole"
+
+          # The Infra Destination (Prometheus/Kubernetes)
+          - name: "prometheus-alerts"
+            discord_configs:
+              - webhook_url: "https://discordapp.com/api/webhooks/1504429797059592296/gyva0v-6N_wBvKN9EM9GTNTr91hfwZttykKNR2xrmGs68VfLpHZlmRDP8G3q3lnNucFd"
+                title: "🔧 SYSTEM {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
+                message: |-
+                  {{ range .Alerts }}
+                  **Summary:** {{ .Annotations.summary }}
+                  **Details:** {{ .Annotations.description }}
+                  -------------------------------------------
+                  {{ end }}
+
+          # The Bot Destination (Loki)
+          - name: "loki-alerts"
+            discord_configs:
+              - webhook_url: "https://discordapp.com/api/webhooks/1504421877290893375/pFGMLOT6OBxhpAf-h0W8ZTLI5TYaOIdxziN5ICTufPXiBUkU285RbwsB8utsbWYjh1yG"
+                title: "🤖 BOT {{ .Status | toUpper }}: {{ .GroupLabels.alertname }}"
+                message: |-
+                  {{ range .Alerts }}
+                  **Summary:** {{ .Annotations.summary }}
+                  **Bot:** {{ .Labels.bot_id }} | **Server:** {{ .Labels.server }}
+                  -------------------------------------------
+                  {{ end }}
 
 # ------------------------------------------------------------------------------
 # OpenTelemetry Collector Configuration
