@@ -45,19 +45,21 @@ helm install strimzi-operator strimzi/strimzi-kafka-operator
 
 ```
 dofus-observability/
-├── Chart.yaml                           # Dependencies: kube-prometheus-stack, loki-stack
-├── values.yaml                          # All configurable values
-├── configs/                             # Standalone config files (separation of concerns)
-│   ├── otel-collector-config.yaml       # OTel pipeline: Kafka → Prometheus + Loki
-│   ├── prometheus-alerts.yaml           # Alert: KamasSuddenDrop (>500k in 5m)
-│   ├── grafana-datasources.yaml         # Grafana provisioning: Prometheus + Loki
-│   └── dofus-dashboard.json             # Grafana dashboard: Kamas graph + Logs panel
-├── templates/                           # Kubernetes manifests (no inline configs!)
-│   ├── kafka-cluster.yaml               # Strimzi Kafka + KafkaTopic (bot_events)
-│   ├── otel-collector-crd.yaml          # OpenTelemetryCollector CRD
-│   ├── prometheus-rule.yaml             # PrometheusRule CRD
-│   └── grafana-dashboard-cm.yaml        # ConfigMap with grafana_dashboard label
-└── README.md
+├── Chart.yaml                           # Chart metadata & sub-chart dependencies
+├── Chart.lock                           # Pinned dependency versions
+├── values.yaml                          # Helm values for all sub-charts & components
+├── README.md                            # Chart documentation
+├── charts/                              # Downloaded Helm dependency charts (.tgz)
+├── configs/                             # Standalone configuration files
+│   ├── bot-alerts.yaml                  # Loki log-based alerting rules
+│   └── grafana-dashboards/              # Grafana dashboard JSON definitions
+│       ├── dofus-dashboard.json         # Dofus Bot Fleet dashboard (Kamas balance + bot logs)
+│       └── node-dashboard.json          # Node infrastructure dashboard
+└── templates/                           # Kubernetes manifests & Helm templates
+    ├── argocd.yaml                      # Ingress route for ArgoCD UI (argocd.dofus.local)
+    ├── kafka-cluster.yaml               # Strimzi Kafka Cluster + KafkaNodePool + KafkaTopic + KafkaBridge
+    ├── loki-alerts-cm.yaml              # ConfigMap injecting bot-alerts.yaml into Loki
+    └── metallb-config.yaml              # MetalLB IPAddressPool + L2Advertisement
 ```
 
 ## Design Principles
@@ -126,9 +128,15 @@ helm upgrade dofus-observability . \
 
 ### Alerting
 
-| Alert | Condition | Severity |
-|---|---|---|
-| `KamasSuddenDrop` | `dofus_bot_kamas` drops > 500k in 5 minutes | `critical` |
+Log-based alerts configured in [`configs/bot-alerts.yaml`](configs/bot-alerts.yaml) and deployed via ConfigMap:
+
+| Alert | Condition / Expression | Severity | Status |
+|---|---|---|---|
+| `BannedAccountDetected` | `bannedAccountsCount > 0` in last 30m | 🔴 `critical` | Active |
+| `ZeroLogIngestion` | No logs from OTLP exporter for 20m | 🔴 `critical` | Active |
+| `ZeroControllerLogIngestion` | No logs from Controller bots for 20m | 🔴 `critical` | Active |
+| `ZeroBotConnected` | `connectedAccountsCount == 0` for 20m | 🟡 `warning` | Active |
+| `TotalKamasDrop` | Net kamas loss > 10 over 1h | 🟡 `warning` | ⚪ *Disabled* |
 
 ## Grafana Dashboard
 

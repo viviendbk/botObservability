@@ -173,15 +173,18 @@ botObservability/
 ├── dofus-observability/                         # Helm Umbrella Chart
 │   ├── Chart.yaml                               # Chart metadata & dependencies
 │   ├── Chart.lock                               # Pinned dependency versions
-│   ├── values.yaml                              # All configurable values
-│   ├── charts/                                  # Downloaded dependency charts
-│   ├── configs/                                 # Standalone config files (Dashboards as Code)
-│   │   ├── dofus-dashboard.json                 # Grafana dashboard: Kamas Balance + Bot Events
-│   │   ├── grafana-datasources.yaml             # Auto-provisioned datasources: Prometheus + Loki
-│   │   ├── otel-collector-config.yaml           # OTel pipeline configuration
-│   │   └── prometheus-alerts.yaml               # Alert rule: KamasSuddenDrop (>500k in 5m)
-│   └── templates/                               # Kubernetes manifests (no inline configs)
+│   ├── values.yaml                              # Helm values for all sub-charts & components
+│   ├── README.md                                # Chart documentation
+│   ├── charts/                                  # Downloaded Helm dependency charts (.tgz)
+│   ├── configs/                                 # Standalone configuration files
+│   │   ├── bot-alerts.yaml                      # Loki log-based alerting rules (Banned accounts, pipeline failures, bot activity)
+│   │   └── grafana-dashboards/                  # Grafana dashboard JSON definitions
+│   │       ├── dofus-dashboard.json             # Dofus Bot Fleet dashboard (Kamas balance + bot logs)
+│   │       └── node-dashboard.json              # Node infrastructure dashboard
+│   └── templates/                               # Kubernetes manifests & Helm templates
+│       ├── argocd.yaml                          # Ingress route for ArgoCD UI (argocd.dofus.local)
 │       ├── kafka-cluster.yaml                   # Strimzi Kafka Cluster + KafkaNodePool + KafkaTopic + KafkaBridge
+│       ├── loki-alerts-cm.yaml                  # ConfigMap injecting bot-alerts.yaml into Loki
 │       └── metallb-config.yaml                  # MetalLB IPAddressPool + L2Advertisement
 └── .gitignore
 ```
@@ -487,13 +490,23 @@ The **Dofus Bot Fleet** dashboard (`uid: dofus-bots`) is provisioned automatical
 
 ## 🚨 Alerting
 
-Prometheus alerting rules are defined in [`configs/prometheus-alerts.yaml`](dofus-observability/configs/prometheus-alerts.yaml) and loaded via the **PrometheusRule CRD**.
+Log-based alerting rules are defined in [`dofus-observability/configs/bot-alerts.yaml`](dofus-observability/configs/bot-alerts.yaml) and loaded into Loki via the `loki-alerts-cm.yaml` ConfigMap template.
 
-| Alert | Expression | Duration | Severity |
-|:------|:-----------|:---------|:---------|
-| **KamasSuddenDrop** | `(max_over_time(dofus_bot_kamas[5m]) - dofus_bot_kamas) > 500000` | 1 minute | 🔴 `critical` |
+| Alert | LogQL Expression | Duration | Severity | Status |
+|:------|:-----------------|:---------|:---------|:-------|
+| **BannedAccountDetected** | `sum(last_over_time({exporter="OTLP"} \| json count="body.bannedAccountsCount" \| unwrap count \| __error__="" [30m])) > 0` | `0m` | 🔴 `critical` | Active |
+| **ZeroLogIngestion** | `absent_over_time({exporter="OTLP"}[20m])` | `0m` | 🔴 `critical` | Active |
+| **ZeroControllerLogIngestion** | `absent_over_time({exporter="OTLP",botType=~"Controller.*"}[20m])` | `0m` | 🔴 `critical` | Active |
+| **ZeroBotConnected** | `sum(last_over_time({exporter="OTLP", source="snowbot", botType=~"Controller.*"} \| json count="body.connectedAccountsCount" \| count >= 0 \| unwrap count \| __error__="" [5m])) == 0` | `20m` | 🟡 `warning` | Active |
+| **TotalKamasDrop** | `(max_over_time(brut+bank+hdv[1h]) - last_over_time(brut+bank+hdv[5m])) > 10` | `0m` | 🟡 `warning` | ⚪ *Disabled* |
 
-**Trigger condition:** Fires when any bot's kamas balance drops by more than **500,000** within a rolling **5-minute** window — indicating a potential ban, theft, or in-game exploit.
+### Alert Summaries & Trigger Conditions
+
+- **🚨 BannedAccountDetected**: Fires immediately (`0m`) when any bot reports `bannedAccountsCount > 0` within a rolling 30-minute window — indicating one or more bots have been banned by the server.
+- **⚠️ ZeroLogIngestion**: Fires immediately (`0m`) when Loki has not received a single log from the OTLP exporter in 20 minutes — indicating a total telemetry pipeline failure.
+- **⚠️ ZeroControllerLogIngestion**: Fires immediately (`0m`) when Loki receives no logs from Controller-type bots (`botType=~"Controller.*"`) in 20 minutes.
+- **📉 ZeroBotConnected**: Fires after 20 minutes (`20m`) when Controller bots report 0 connected accounts (`connectedAccountsCount == 0`) over a 5-minute window — indicating fleet-wide bot disconnections.
+- **📉 TotalKamasDrop** *(Disabled)*: Fires if a bot loses more than 10 total kamas (brut + bank + HDV) over the last hour (currently commented out in configuration).
 
 ---
 
